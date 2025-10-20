@@ -1,0 +1,62 @@
+CREATE OR REPLACE TABLE staging.staging_songs (raw VARIANT);
+CREATE OR REPLACE TABLE staging.staging_events (raw VARIANT);
+
+CREATE OR REPLACE FILE FORMAT json_format
+  TYPE = JSON
+  STRIP_OUTER_ARRAY = TRUE;
+
+COPY INTO staging.staging_songs
+FROM @staging.song_data_stage
+FILE_FORMAT = (FORMAT_NAME = json_format)
+ON_ERROR = 'CONTINUE';
+
+COPY INTO staging.staging_events
+FROM @staging.log_data_stage
+FILE_FORMAT = (FORMAT_NAME = json_format)
+ON_ERROR = 'CONTINUE';
+
+Select * from staging_songs;
+Select * from staging_events;
+
+CREATE OR REPLACE VIEW staging.v_songs AS
+SELECT
+  TRY_TO_NUMBER(raw:num_songs::STRING) AS num_songs,
+  raw:artist_id::STRING AS artist_id,
+  TRY_TO_NUMBER(raw:artist_latitude::STRING) AS artist_latitude,
+  TRY_TO_NUMBER(raw:artist_longitude::STRING) AS artist_longitude,
+  raw:artist_location::STRING AS artist_location,
+  raw:artist_name::STRING AS artist_name,
+  raw:song_id::STRING AS song_id,
+  raw:title::STRING AS title,
+  TRY_TO_NUMBER(raw:duration::STRING) AS duration,
+  TRY_TO_NUMBER(raw:year::STRING) AS year
+FROM staging.staging_songs;
+
+
+Select * from v_songs;
+
+CREATE OR REPLACE VIEW staging.v_events AS
+SELECT
+  raw:artist::STRING AS artist,
+  raw:auth::STRING AS auth,
+  raw:firstName::STRING AS firstName,
+  raw:gender::STRING AS gender,
+  TRY_TO_NUMBER(raw:itemInSession::STRING) AS itemInSession,
+  raw:lastName::STRING AS lastName,
+  TRY_TO_NUMBER(raw:length::STRING) AS length,
+  raw:level::STRING AS level,
+  raw:location::STRING AS location,
+  raw:method::STRING AS method,
+  raw:page::STRING AS page,
+  TRY_TO_NUMBER(raw:registration::STRING) AS registration,
+  TRY_TO_NUMBER(raw:sessionId::STRING) AS sessionId,
+  raw:song::STRING AS song,
+  TRY_TO_NUMBER(raw:status::STRING) AS status,
+  TRY_TO_NUMBER(raw:ts::STRING) AS ts,
+  raw:userAgent::STRING AS userAgent,
+  TRY_TO_NUMBER(raw:userId::STRING) AS userId
+FROM staging.staging_events;
+
+
+Select * from v_events;
+
