@@ -1,0 +1,41 @@
+CREATE or Replace DATABASE sparkify_data_warehouse;
+USE DATABASE sparkify_data_warehouse;
+
+USE Role accountadmin;
+
+GRANT CREATE INTEGRATION ON ACCOUNT TO ROLE SYSADMIN;
+
+
+CREATE OR REPLACE STORAGE INTEGRATION s3_int
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = S3
+  ENABLED = TRUE
+  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::352635226582:role/SnowFlake_Role'
+  STORAGE_ALLOWED_LOCATIONS = ('s3://cdeb2-sparkify-data-warehousing/data/');
+
+  DESC INTEGRATION s3_int;
+
+CREATE OR REPLACE STAGE sparkify_stage
+  URL = 's3://cdeb2-sparkify-data-warehousing/'
+  STORAGE_INTEGRATION = s3_int;
+
+LIST @sparkify_stage;
+
+CREATE OR REPLACE SCHEMA staging;
+
+CREATE OR REPLACE SCHEMA dwh;
+
+-- For song_data
+CREATE OR REPLACE STAGE staging.song_data_stage
+  URL = 's3://cdeb2-sparkify-data-warehousing/data/song_data/'
+  STORAGE_INTEGRATION = s3_int
+  FILE_FORMAT = (TYPE = JSON);
+
+-- For log_data
+CREATE OR REPLACE STAGE staging.log_data_stage
+  URL = 's3://cdeb2-sparkify-data-warehousing/data/log_data/'
+  STORAGE_INTEGRATION = s3_int
+  FILE_FORMAT = (TYPE = JSON);
+
+LIST @staging.song_data_stage;
+LIST @staging.log_data_stage;
