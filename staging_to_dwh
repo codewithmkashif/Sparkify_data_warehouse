@@ -1,0 +1,73 @@
+CREATE OR REPLACE TABLE dwh.users AS
+SELECT DISTINCT
+  userId::INT AS user_id,
+  firstName AS first_name,
+  lastName AS last_name,
+  gender,
+  level
+FROM staging.v_events
+WHERE userId IS NOT NULL;
+
+SELECT * from dwh.users;
+
+CREATE OR REPLACE TABLE dwh.songs AS
+SELECT DISTINCT
+  song_id,
+  title,
+  artist_id,
+  year,
+  duration
+FROM staging.v_songs;
+
+SELECT * from dwh.songs;
+
+CREATE OR REPLACE TABLE dwh.artists AS
+SELECT DISTINCT
+  artist_id,
+  artist_name AS name,
+  artist_location AS location,
+  artist_latitude AS latitude,
+  artist_longitude AS longitude
+FROM staging.v_songs;
+
+SELECT * FROM DWH.ARTISTS;
+
+CREATE OR REPLACE TABLE dwh.time AS
+SELECT DISTINCT
+    DATEADD(
+        'second', 
+        ts / 1000, 
+        TO_TIMESTAMP_NTZ('1970-01-01 00:00:00')
+    ) AS start_time,
+    
+    EXTRACT(hour      FROM DATEADD('second', ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00'))) AS hour,
+    EXTRACT(day       FROM DATEADD('second', ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00'))) AS day,
+    EXTRACT(week      FROM DATEADD('second', ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00'))) AS week,
+    EXTRACT(month     FROM DATEADD('second', ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00'))) AS month,
+    EXTRACT(year      FROM DATEADD('second', ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00'))) AS year,
+    EXTRACT(weekday   FROM DATEADD('second', ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00'))) AS weekday
+FROM staging.v_events
+WHERE ts IS NOT NULL;
+
+SELECT * from dwh.time;
+
+CREATE OR REPLACE TABLE dwh.songplays AS
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY e.ts) AS songplay_id,
+    DATEADD('second', e.ts / 1000, TO_TIMESTAMP_NTZ('1970-01-01 00:00:00')) AS start_time,
+    e.userId,
+    e.level,
+    s.song_id,
+    s.artist_id,
+    e.sessionId AS session_id,
+    e.location,
+    e.userAgent AS user_agent
+FROM staging.v_events e
+LEFT JOIN staging.v_songs s
+    ON LOWER(TRIM(e.song)) = LOWER(TRIM(s.title))
+    AND LOWER(TRIM(e.artist)) = LOWER(TRIM(s.artist_name))
+    AND ABS(TO_DOUBLE(e.length) - TO_DOUBLE(s.duration)) < 2
+WHERE e.page = 'NextSong'
+  AND e.ts IS NOT NULL;
+
+SELECT * from dwh.songplays;
