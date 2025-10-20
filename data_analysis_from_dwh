@@ -1,0 +1,29 @@
+--TOP 10 Most played song
+SELECT s.title, a.name AS artist, COUNT(*) AS play_count
+FROM dwh.songplays sp
+JOIN dwh.songs s   ON sp.song_id = s.song_id
+JOIN dwh.artists a ON sp.artist_id = a.artist_id
+GROUP BY s.title, a.name
+ORDER BY play_count DESC
+LIMIT 10;
+
+--User by subscribtion level
+SELECT u.level, COUNT(DISTINCT u.user_Id) AS user_count
+FROM dwh.users u
+GROUP BY u.level;
+
+--Most active user
+SELECT u.first_name, u.last_name, COUNT(*) AS total_plays
+FROM dwh.songplays sp
+JOIN dwh.users u ON sp.USERID = u.USER_ID
+GROUP BY u.first_name, u.last_name
+ORDER BY total_plays DESC
+LIMIT 10;
+
+--Songs played by time of day
+SELECT t.hour, COUNT(*) AS plays
+FROM dwh.songplays sp
+JOIN dwh.time t ON sp.start_time = t.start_time
+GROUP BY t.hour
+ORDER BY t.hour;
+
